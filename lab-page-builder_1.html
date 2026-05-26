@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab Page Builder</title>
+<style>
+  :root{
+    --bg:#F5F5F7;
+    --surface:#FFFFFF;
+    --ink:#1D1D1F;
+    --ink-2:#6E6E73;
+    --line:#E5E5EA;
+    --line-2:#D2D2D7;
+    --accent:#0D9488;
+    --accent-soft:rgba(13,148,136,.12);
+    --radius:12px;
+    --shadow:0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);
+    --shadow-sm:0 1px 2px rgba(0,0,0,.05);
+    --font:-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "Segoe UI", sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--font);
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    overflow:hidden;
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    height:52px;
+    background:rgba(255,255,255,.8);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-bottom:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 18px;
+    position:relative;
+    z-index:30;
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;letter-spacing:-.01em}
+  .brand .logo{
+    width:26px;height:26px;border-radius:7px;
+    background:var(--accent);
+    display:grid;place-items:center;color:#fff;
+    transition:background .25s ease;
+  }
+  .brand .logo svg{width:15px;height:15px}
+  .top-actions{display:flex;align-items:center;gap:8px}
+
+  .btn{
+    font-family:var(--font);
+    font-size:13px;font-weight:500;
+    border:none;cursor:pointer;
+    border-radius:980px;
+    padding:7px 15px;
+    display:inline-flex;align-items:center;gap:6px;
+    transition:all .18s ease;
+    letter-spacing:-.01em;
+    white-space:nowrap;
+  }
+  .btn:active{transform:scale(.97)}
+  .btn-ghost{background:transparent;color:var(--ink-2)}
+  .btn-ghost:hover{background:rgba(0,0,0,.05);color:var(--ink)}
+  .btn-soft{background:#fff;color:var(--ink);box-shadow:var(--shadow-sm);border:1px solid var(--line)}
+  .btn-soft:hover{background:#fafafa}
+  .btn-accent{background:var(--accent);color:#fff;box-shadow:0 2px 8px var(--accent-soft);transition:background .25s ease,transform .18s ease,box-shadow .25s ease}
+  .btn-accent:hover{filter:brightness(1.05)}
+  .btn-icon{width:15px;height:15px}
+
+  .seg{
+    display:flex;background:rgba(0,0,0,.05);border-radius:980px;padding:2px;
+  }
+  .seg button{
+    border:none;background:transparent;cursor:pointer;
+    font-family:var(--font);font-size:12.5px;font-weight:500;color:var(--ink-2);
+    padding:5px 14px;border-radius:980px;transition:all .2s ease;letter-spacing:-.01em;
+  }
+  .seg button.active{background:#fff;color:var(--ink);box-shadow:var(--shadow-sm)}
+
+  /* ---------- Layout ---------- */
+  .stage{height:calc(100vh - 52px);display:flex;overflow:hidden}
+
+  .sidebar{
+    width:420px;flex:0 0 420px;
+    background:var(--surface);
+    border-right:1px solid var(--line);
+    overflow-y:auto;
+    overflow-x:hidden;
+    height:100%;
+  }
+  .sidebar::-webkit-scrollbar{width:10px}
+  .sidebar::-webkit-scrollbar-thumb{background:#d8d8dc;border-radius:8px;border:3px solid var(--surface)}
+  .sidebar::-webkit-scrollbar-thumb:hover{background:#c0c0c5}
+
+  .preview-wrap{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--bg);padding:14px}
+
+  /* ---------- Accordion ---------- */
+  .accordion{border-bottom:1px solid var(--line)}
+  .acc-head{
+    width:100%;border:none;background:transparent;cursor:pointer;
+    display:flex;align-items:center;gap:11px;
+    padding:16px 20px;
+    font-family:var(--font);text-align:left;
+    transition:background .15s ease;
+  }
+  .acc-head:hover{background:#fbfbfd}
+  .acc-num{
+    width:22px;height:22px;flex:0 0 22px;border-radius:6px;
+    background:var(--accent-soft);color:var(--accent);
+    display:grid;place-items:center;font-size:11px;font-weight:700;
+    transition:background .25s ease,color .25s ease;
+  }
+  .acc-title{flex:1;font-size:14px;font-weight:600;letter-spacing:-.01em}
+  .acc-sub{font-size:12px;color:var(--ink-2);font-weight:400;margin-top:1px}
+  .acc-chevron{width:16px;height:16px;color:var(--ink-2);transition:transform .3s cubic-bezier(.4,0,.2,1)}
+  .accordion.open .acc-chevron{transform:rotate(90deg)}
+  .acc-body{
+    display:grid;grid-template-rows:0fr;
+    transition:grid-template-rows .3s cubic-bezier(.4,0,.2,1);
+  }
+  .accordion.open .acc-body{grid-template-rows:1fr}
+  .acc-body-inner{overflow:hidden}
+  .acc-pad{padding:4px 20px 20px}
+
+  /* ---------- Fields ---------- */
+  .field{margin-bottom:16px}
+  .field:last-child{margin-bottom:0}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--ink);margin-bottom:7px;letter-spacing:-.005em}
+  .field .hint-txt{font-size:11px;color:var(--ink-2);font-weight:400}
+  input[type=text],textarea,select{
+    width:100%;font-family:var(--font);font-size:13.5px;color:var(--ink);
+    background:#fff;border:1px solid var(--line-2);border-radius:9px;
+    padding:9px 11px;transition:all .18s ease;letter-spacing:-.005em;
+  }
+  textarea{resize:vertical;line-height:1.5;min-height:64px}
+  input[type=text]:focus,textarea:focus,select:focus{
+    outline:none;border-color:var(--accent);
+    box-shadow:0 0 0 3.5px var(--accent-soft);
+  }
+  select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236E6E73' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:right 11px center;padding-right:32px;cursor:pointer}
+
+  .row2{display:flex;gap:12px}
+  .row2 .field{flex:1;margin-bottom:0}
+
+  .count{display:inline-block;font-size:10.5px;color:var(--ink-2);background:#f0f0f2;border-radius:5px;padding:2px 7px;margin-top:6px;font-variant-numeric:tabular-nums}
+
+  /* color picker */
+  .color-field{display:flex;align-items:center;gap:11px}
+  .color-swatch{position:relative;width:40px;height:40px;border-radius:10px;overflow:hidden;flex:0 0 40px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+  .color-swatch input[type=color]{position:absolute;inset:-6px;width:140%;height:140%;border:none;padding:0;cursor:pointer;background:none}
+  .color-hex{flex:1}
+
+  /* ---------- Toggle switch ---------- */
+  .switch{position:relative;display:inline-flex;align-items:center;cursor:pointer;gap:9px}
+  .switch input{position:absolute;opacity:0;width:0;height:0}
+  .switch .track{width:42px;height:25px;background:#e3e3e8;border-radius:980px;transition:background .25s ease;flex:0 0 42px;position:relative}
+  .switch .track::after{content:"";position:absolute;top:2px;left:2px;width:21px;height:21px;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .25s cubic-bezier(.4,0,.2,1)}
+  .switch input:checked + .track{background:var(--accent)}
+  .switch input:checked + .track::after{transform:translateX(17px)}
+  .switch .lbl{font-size:13px;font-weight:500;color:var(--ink)}
+
+  /* ---------- Step / Extra cards ---------- */
+  .item-card{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    padding:15px;margin-bottom:13px;position:relative;
+    box-shadow:var(--shadow-sm);
+    transition:box-shadow .2s ease,opacity .2s ease,transform .15s ease;
+  }
+  .item-card.dragging{opacity:.4;box-shadow:0 12px 30px rgba(0,0,0,.14)}
+  .item-card.drag-over{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .card-head{display:flex;align-items:center;gap:10px;margin-bottom:13px}
+  .drag-handle{cursor:grab;color:#c0c0c5;display:flex;padding:2px;border-radius:5px;transition:color .15s ease,background .15s ease}
+  .drag-handle:hover{color:var(--ink-2);background:#f0f0f2}
+  .drag-handle:active{cursor:grabbing}
+  .drag-handle svg{width:16px;height:16px}
+  .step-badge{
+    width:24px;height:24px;flex:0 0 24px;border-radius:50%;
+    background:var(--accent);color:#fff;display:grid;place-items:center;
+    font-size:12px;font-weight:700;transition:background .25s ease;
+  }
+  .card-head .ttl{flex:1;font-size:12.5px;font-weight:600;color:var(--ink-2)}
+  .bulb{font-size:13px;line-height:1;filter:saturate(1.2)}
+  .hint-tag{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);border-radius:5px;padding:2px 6px;margin-left:2px;vertical-align:middle}
+  .del-btn{
+    border:none;background:transparent;cursor:pointer;color:#c0c0c5;
+    width:28px;height:28px;border-radius:7px;display:grid;place-items:center;
+    transition:all .15s ease;
+  }
+  .del-btn:hover{background:#ffeceb;color:#ff3b30}
+  .del-btn svg{width:15px;height:15px}
+
+  .add-btn{
+    width:100%;border:1.5px dashed var(--line-2);background:transparent;
+    border-radius:var(--radius);padding:14px;cursor:pointer;
+    font-family:var(--font);font-size:13px;font-weight:600;color:var(--ink-2);
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    transition:all .2s ease;
+  }
+  .add-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+  .add-btn svg{width:16px;height:16px}
+
+  .hint-block{margin-top:13px;border-top:1px dashed var(--line);padding-top:13px}
+
+  /* code editor with line numbers */
+  .code-edit{
+    display:flex;background:#1e1e1e;border-radius:9px;overflow:hidden;
+    font-family:"SF Mono",ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+    font-size:12.5px;line-height:1.6;border:1px solid #2a2a2a;
+  }
+  .code-gutter{
+    padding:11px 0 11px 12px;color:#5a5a5a;text-align:right;user-select:none;
+    overflow:hidden;white-space:pre;min-width:34px;
+  }
+  .code-edit textarea{
+    flex:1;background:transparent;color:#e4e4e4;border:none;border-radius:0;
+    padding:11px 12px;resize:vertical;min-height:90px;
+    font-family:inherit;font-size:inherit;line-height:1.6;
+    white-space:pre;overflow-wrap:normal;tab-size:2;
+  }
+  .code-edit textarea:focus{outline:none;box-shadow:none}
+  .code-edit textarea::-webkit-scrollbar{height:8px}
+  .code-edit textarea::-webkit-scrollbar-thumb{background:#3a3a3a;border-radius:4px}
+
+  /* ---------- Preview chrome ---------- */
+  .chrome{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius) var(--radius) 0 0;
+    border-bottom:none;height:38px;display:flex;align-items:center;gap:12px;padding:0 14px;
+  }
+  .lights{display:flex;gap:7px}
+  .lights span{width:11px;height:11px;border-radius:50%}
+  .lights .r{background:#ff5f57}.lights .y{background:#febc2e}.lights .g{background:#28c840}
+  .urlbar{
+    flex:1;height:24px;background:#f0f0f2;border-radius:7px;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    font-size:11.5px;color:var(--ink-2);
+  }
+  .urlbar svg{width:11px;height:11px}
+  .chrome .btn{padding:5px 12px;font-size:11.5px}
+
+  .frame-host{flex:1;border:1px solid var(--line);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden;background:#fff;box-shadow:var(--shadow)}
+  .frame-host iframe{width:100%;height:100%;border:none;display:block;background:#fff}
+
+  /* full preview */
+  .full-preview{position:fixed;inset:52px 0 0 0;background:#fff;z-index:20;display:none}
+  .full-preview iframe{width:100%;height:100%;border:none}
+  body.mode-preview .stage{display:none}
+  body.mode-preview .full-preview{display:block}
+
+  /* mobile tabs */
+  .mobile-tabs{display:none}
+
+  /* toast */
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:rgba(30,30,32,.92);backdrop-filter:blur(20px);color:#fff;
+    padding:11px 20px;border-radius:980px;font-size:13px;font-weight:500;
+    box-shadow:0 10px 40px rgba(0,0,0,.3);opacity:0;pointer-events:none;
+    transition:all .35s cubic-bezier(.4,0,.2,1);z-index:100;display:flex;align-items:center;gap:8px;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast svg{width:15px;height:15px;color:#28c840}
+
+  @media (max-width:900px){
+    .sidebar{width:100%;flex:1 1 auto;border-right:none}
+    .stage{flex-direction:column}
+    .preview-wrap{display:none}
+    .mobile-tabs{display:flex;justify-content:center;padding:10px;background:var(--surface);border-bottom:1px solid var(--line)}
+    body.tab-preview .sidebar{display:none}
+    body.tab-preview .preview-wrap{display:flex;flex:1}
+    .desktop-preview-toggle{display:none}
+  }
+</style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="brand">
+      <span class="logo" id="brandLogo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </span>
+      Lab Page Builder
+    </div>
+    <div class="top-actions">
+      <input type="file" id="mdInput" accept=".md,.markdown,text/markdown,text/plain" style="display:none" onchange="importMarkdown(this)">
+      <button class="btn btn-ghost" onclick="downloadTemplate()" title="Download a blank Markdown template">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+        Template
+      </button>
+      <button class="btn btn-ghost" onclick="document.getElementById('mdInput').click()" title="Import a Markdown lab file">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Import .md
+      </button>
+      <button class="btn btn-ghost" onclick="loadExample()">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        Load Example
+      </button>
+      <div class="seg desktop-preview-toggle" id="modeSeg">
+        <button class="active" data-mode="edit" onclick="setMode('edit')">Edit</button>
+        <button data-mode="preview" onclick="setMode('preview')">Preview</button>
+      </div>
+      <button class="btn btn-accent" id="exportBtn" onclick="exportHTML()">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export HTML
+      </button>
+    </div>
+  </div>
+
+  <!-- MOBILE TABS -->
+  <div class="mobile-tabs">
+    <div class="seg">
+      <button class="active" onclick="setTab('edit',this)">Editor</button>
+      <button onclick="setTab('preview',this)">Preview</button>
+    </div>
+  </div>
+
+  <!-- STAGE -->
+  <div class="stage">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <!-- PREVIEW -->
+    <div class="preview-wrap">
+      <div class="chrome">
+        <div class="lights"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <div class="urlbar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          preview
+        </div>
+        <button class="btn btn-soft" onclick="openFullTab()">
+          <svg style="width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+          Full Screen Preview
+        </button>
+      </div>
+      <div class="frame-host"><iframe id="previewFrame" title="Lab preview"></iframe></div>
+    </div>
+  </div>
+
+  <!-- FULL PREVIEW -->
+  <div class="full-preview"><iframe id="fullFrame" title="Full preview"></iframe></div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    <span id="toastMsg">Done</span>
+  </div>
+
+<script>
+/* ============================================================
+   DATA MODEL
+============================================================ */
+let stepSeq = 0, extraSeq = 0;
+
+let labConfig = {
+  meta:{ pageTitle:"Coding Lab", pageSubtitle:"Getting Started", accentColor:"#0D9488", locale:"en" },
+  objective:{ title:"Objective", body:"In this lab you will write your first program. Read each step carefully and run your code in the editor on the right." },
+  steps:[
+    { id:++stepSeq, title:"Print a greeting", description:"Use <code>print()</code> to display the text <code>Hello, world!</code> on the screen.", hint:{ enabled:true, code:'print("Hello, world!")' } }
+  ],
+  extras:{ enabled:true, items:[
+    { id:++extraSeq, title:"Personalize it", body:"Ask the user for their name with <code>input()</code> and greet them by name." }
+  ]}
+};
+
+/* ============================================================
+   HELPERS
+============================================================ */
+const $ = (s,r=document)=>r.querySelector(s);
+const esc = s => String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+function counts(str){
+  const t=(str||"").trim();
+  const w=t?t.split(/\s+/).length:0;
+  return `${w} word${w===1?"":"s"} · ${(str||"").length} chars`;
+}
+
+let toastTimer;
+function toast(msg){
+  $("#toastMsg").textContent=msg;
+  const t=$("#toast"); t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove("show"),2200);
+}
+
+/* ============================================================
+   THEME (builder UI follows the lab accent color, live)
+============================================================ */
+function applyTheme(){
+  const c = labConfig.meta.accentColor;
+  document.documentElement.style.setProperty("--accent", c);
+  document.documentElement.style.setProperty("--accent-soft", hexToSoft(c));
+}
+function hexToSoft(hex){
+  const h=hex.replace("#","");
+  const n=h.length===3?h.split("").map(x=>x+x).join(""):h;
+  const r=parseInt(n.slice(0,2),16),g=parseInt(n.slice(2,4),16),b=parseInt(n.slice(4,6),16);
+  return `rgba(${r},${g},${b},.12)`;
+}
+function hexToRGBA(hex,a){
+  const h=(hex||"#000000").replace("#","");
+  const n=h.length===3?h.split("").map(x=>x+x).join(""):h;
+  const r=parseInt(n.slice(0,2),16)||0,g=parseInt(n.slice(2,4),16)||0,b=parseInt(n.slice(4,6),16)||0;
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/* ============================================================
+   SIDEBAR BUILD (built once; inputs bind directly to model)
+============================================================ */
+function buildSidebar(){
+  const sb=$("#sidebar");
+  sb.innerHTML="";
+  sb.appendChild(accordion(1,"Page Settings"," Title, locale & theme",pageSettingsBody(),true));
+  sb.appendChild(accordion(2,"Objective"," Intro shown to students",objectiveBody(),false));
+  sb.appendChild(accordion(3,"Steps"," Ordered instructions",stepsBody(),true));
+  sb.appendChild(accordion(4,"Optional Extensions"," Bonus challenges",extrasBody(),false));
+  renderSteps();
+  renderExtras();
+}
+
+function accordion(num,title,sub,bodyEl,open){
+  const wrap=document.createElement("div");
+  wrap.className="accordion"+(open?" open":"");
+  const head=document.createElement("button");
+  head.className="acc-head";
+  head.innerHTML=`<span class="acc-num">${num}</span>
+    <span class="acc-title">${title}<span class="acc-sub">${sub}</span></span>
+    <svg class="acc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+  head.onclick=()=>wrap.classList.toggle("open");
+  const body=document.createElement("div");
+  body.className="acc-body";
+  const inner=document.createElement("div");
+  inner.className="acc-body-inner";
+  const pad=document.createElement("div");
+  pad.className="acc-pad";
+  pad.appendChild(bodyEl);
+  inner.appendChild(pad); body.appendChild(inner);
+  wrap.appendChild(head); wrap.appendChild(body);
+  return wrap;
+}
+
+/* ---- field factories ---- */
+function textField(label,value,oninput,placeholder=""){
+  const f=document.createElement("div"); f.className="field";
+  const id="f"+Math.random().toString(36).slice(2,8);
+  f.innerHTML=`<label for="${id}">${label}</label><input id="${id}" type="text" value="${esc(value)}" placeholder="${esc(placeholder)}">`;
+  f.querySelector("input").addEventListener("input",e=>{oninput(e.target.value);schedulePreview();});
+  return f;
+}
+function areaField(label,value,oninput,rows=4,allowHtml=false){
+  const f=document.createElement("div"); f.className="field";
+  const id="f"+Math.random().toString(36).slice(2,8);
+  const note=allowHtml?` <span class="hint-txt">— HTML allowed</span>`:"";
+  f.innerHTML=`<label for="${id}">${label}${note}</label><textarea id="${id}" rows="${rows}">${esc(value)}</textarea><span class="count"></span>`;
+  const ta=f.querySelector("textarea"), cnt=f.querySelector(".count");
+  cnt.textContent=counts(value);
+  ta.addEventListener("input",e=>{oninput(e.target.value);cnt.textContent=counts(e.target.value);schedulePreview();});
+  return f;
+}
+
+/* ---- Section 1 ---- */
+function pageSettingsBody(){
+  const c=document.createElement("div");
+  c.appendChild(textField("Page Title",labConfig.meta.pageTitle,v=>labConfig.meta.pageTitle=v,"Coding Lab"));
+  c.appendChild(textField("Page Subtitle",labConfig.meta.pageSubtitle,v=>labConfig.meta.pageSubtitle=v,"Getting Started"));
+
+  // const note=document.createElement("div"); note.className="field";
+  // note.innerHTML=`<div style="display:flex;gap:9px;align-items:flex-start;background:var(--accent-soft);border-radius:10px;padding:11px 12px">
+  //   <svg style="width:15px;height:15px;flex:0 0 15px;margin-top:1px;color:var(--accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+  //   <span style="font-size:12px;line-height:1.45;color:var(--ink-2)">Students choose their own language from the OneCompiler editor's built-in language menu.</span>
+  // </div>`;
+  // c.appendChild(note);
+
+  const row=document.createElement("div"); row.className="row2";
+  // accent color
+  const col=document.createElement("div"); col.className="field";
+  col.innerHTML=`<label>Accent Color</label>
+    <div class="color-field">
+      <span class="color-swatch"><input type="color" value="${labConfig.meta.accentColor}"></span>
+      <input class="color-hex" type="text" value="${labConfig.meta.accentColor}">
+    </div>`;
+  const picker=col.querySelector('input[type=color]'), hex=col.querySelector('.color-hex');
+  picker.addEventListener("input",e=>{labConfig.meta.accentColor=e.target.value;hex.value=e.target.value;applyTheme();schedulePreview();});
+  hex.addEventListener("input",e=>{ let v=e.target.value.trim(); if(/^#?[0-9a-fA-F]{6}$/.test(v)){ if(v[0]!=="#")v="#"+v; labConfig.meta.accentColor=v; picker.value=v; applyTheme(); schedulePreview(); }});
+  row.appendChild(col);
+  // locale
+  const loc=textField("Locale",labConfig.meta.locale,v=>labConfig.meta.locale=v,"en");
+  loc.style.flex="0 0 110px";
+  row.appendChild(loc);
+  c.appendChild(row);
+  return c;
+}
+
+/* ---- Section 2 ---- */
+function objectiveBody(){
+  const c=document.createElement("div");
+  c.appendChild(textField("Section Heading",labConfig.objective.title,v=>labConfig.objective.title=v,"Objective"));
+  c.appendChild(areaField("Body Text",labConfig.objective.body,v=>labConfig.objective.body=v,4,true));
+  return c;
+}
+
+/* ---- Section 3 : Steps ---- */
+function stepsBody(){
+  const c=document.createElement("div");
+  const list=document.createElement("div"); list.id="stepsList"; c.appendChild(list);
+  const add=document.createElement("button"); add.className="add-btn";
+  add.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Step`;
+  add.onclick=()=>{ labConfig.steps.push({id:++stepSeq,title:"",description:"",hint:{enabled:false,code:""}}); renderSteps(); schedulePreview(); };
+  c.appendChild(add);
+  return c;
+}
+
+function renderSteps(){
+  const list=$("#stepsList"); if(!list)return; list.innerHTML="";
+  labConfig.steps.forEach((step,idx)=>list.appendChild(stepCard(step,idx)));
+}
+
+function stepCard(step,idx){
+  const card=document.createElement("div");
+  card.className="item-card"; card.draggable=false; card.dataset.id=step.id;
+
+  const head=document.createElement("div"); head.className="card-head";
+  head.innerHTML=`
+    <span class="drag-handle" title="Drag to reorder">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>
+    </span>
+    <span class="step-badge">${idx+1}</span>
+    <span class="ttl">Step ${idx+1}${step.hint.enabled?' <span class="hint-tag">hint</span>':''}</span>`;
+  const del=document.createElement("button"); del.className="del-btn"; del.title="Delete step";
+  del.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+  del.onclick=()=>{ labConfig.steps=labConfig.steps.filter(s=>s.id!==step.id); renderSteps(); schedulePreview(); };
+  head.appendChild(del);
+  card.appendChild(head);
+
+  card.appendChild(textField("Step Title",step.title,v=>step.title=v,"What to do"));
+  card.appendChild(areaField("Description",step.description,v=>step.description=v,3,true));
+
+  // hint block
+  const hb=document.createElement("div"); hb.className="hint-block";
+  const sw=document.createElement("label"); sw.className="switch";
+  sw.innerHTML=`<input type="checkbox" ${step.hint.enabled?"checked":""}><span class="track"></span><span class="lbl">Include Hint</span>`;
+  hb.appendChild(sw);
+  const hintArea=document.createElement("div"); hintArea.style.marginTop="13px";
+  hintArea.style.display=step.hint.enabled?"block":"none";
+  hintArea.appendChild(codeEditor(step.hint.code,v=>step.hint.code=v));
+  hb.appendChild(hintArea);
+  sw.querySelector("input").addEventListener("change",e=>{
+    step.hint.enabled=e.target.checked;
+    hintArea.style.display=e.target.checked?"block":"none";
+    head.querySelector(".ttl").innerHTML=`Step ${idx+1}${e.target.checked?' <span class="hint-tag">hint</span>':''}`;
+    schedulePreview();
+  });
+  card.appendChild(hb);
+
+  attachDrag(card,step);
+  return card;
+}
+
+/* code editor with synced line numbers */
+function codeEditor(value,oninput){
+  const wrap=document.createElement("div");
+  const lbl=document.createElement("label"); lbl.style.cssText="display:block;font-size:12px;font-weight:600;margin-bottom:7px";
+  lbl.innerHTML='Hint Code <span class="hint-txt">— revealed when students double-click the step number</span>';
+  const ed=document.createElement("div"); ed.className="code-edit";
+  const gutter=document.createElement("div"); gutter.className="code-gutter";
+  const ta=document.createElement("textarea"); ta.value=value; ta.spellcheck=false;
+  ed.appendChild(gutter); ed.appendChild(ta);
+  const sync=()=>{
+    const lines=(ta.value.split("\n").length)||1;
+    gutter.textContent=Array.from({length:lines},(_,i)=>i+1).join("\n");
+  };
+  sync();
+  ta.addEventListener("input",e=>{oninput(e.target.value);sync();schedulePreview();});
+  ta.addEventListener("scroll",()=>gutter.scrollTop=ta.scrollTop);
+  ta.addEventListener("keydown",e=>{
+    if(e.key==="Tab"){ e.preventDefault(); const s=ta.selectionStart,en=ta.selectionEnd;
+      ta.value=ta.value.slice(0,s)+"  "+ta.value.slice(en); ta.selectionStart=ta.selectionEnd=s+2;
+      oninput(ta.value); sync(); schedulePreview(); }
+  });
+  wrap.appendChild(lbl); wrap.appendChild(ed);
+  return wrap;
+}
+
+/* drag & drop reordering */
+let dragId=null;
+function attachDrag(card,step){
+  const handle=card.querySelector(".drag-handle");
+  handle.addEventListener("mousedown",()=>card.draggable=true);
+  card.addEventListener("dragstart",e=>{ dragId=step.id; card.classList.add("dragging"); e.dataTransfer.effectAllowed="move"; });
+  card.addEventListener("dragend",()=>{ card.classList.remove("dragging"); card.draggable=false; document.querySelectorAll(".item-card").forEach(c=>c.classList.remove("drag-over")); });
+  card.addEventListener("dragover",e=>{ e.preventDefault(); if(step.id!==dragId)card.classList.add("drag-over"); });
+  card.addEventListener("dragleave",()=>card.classList.remove("drag-over"));
+  card.addEventListener("drop",e=>{
+    e.preventDefault(); card.classList.remove("drag-over");
+    if(dragId===null||dragId===step.id)return;
+    const from=labConfig.steps.findIndex(s=>s.id===dragId);
+    const to=labConfig.steps.findIndex(s=>s.id===step.id);
+    const [moved]=labConfig.steps.splice(from,1);
+    labConfig.steps.splice(to,0,moved);
+    renderSteps(); schedulePreview();
+  });
+}
+
+/* ---- Section 4 : Extras ---- */
+function extrasBody(){
+  const c=document.createElement("div");
+  const sw=document.createElement("label"); sw.className="switch"; sw.style.marginBottom="16px";
+  sw.innerHTML=`<input type="checkbox" ${labConfig.extras.enabled?"checked":""}><span class="track"></span><span class="lbl">Show Extensions section</span>`;
+  sw.querySelector("input").addEventListener("change",e=>{labConfig.extras.enabled=e.target.checked;schedulePreview();});
+  c.appendChild(sw);
+  const list=document.createElement("div"); list.id="extrasList"; c.appendChild(list);
+  const add=document.createElement("button"); add.className="add-btn";
+  add.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Extension`;
+  add.onclick=()=>{ labConfig.extras.items.push({id:++extraSeq,title:"",body:""}); renderExtras(); schedulePreview(); };
+  c.appendChild(add);
+  return c;
+}
+function renderExtras(){
+  const list=$("#extrasList"); if(!list)return; list.innerHTML="";
+  labConfig.extras.items.forEach((it,i)=>list.appendChild(extraCard(it,i)));
+}
+function extraCard(it,idx){
+  const card=document.createElement("div"); card.className="item-card";
+  const head=document.createElement("div"); head.className="card-head";
+  head.innerHTML=`<span class="step-badge" style="border-radius:7px">${idx+1}</span><span class="ttl">Extension ${idx+1}</span>`;
+  const del=document.createElement("button"); del.className="del-btn"; del.title="Delete";
+  del.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+  del.onclick=()=>{ labConfig.extras.items=labConfig.extras.items.filter(x=>x.id!==it.id); renderExtras(); schedulePreview(); };
+  head.appendChild(del); card.appendChild(head);
+  card.appendChild(textField("Title",it.title,v=>it.title=v,"Bonus challenge"));
+  card.appendChild(areaField("Body",it.body,v=>it.body=v,3,true));
+  return card;
+}
+
+/* ============================================================
+   GENERATE THE STANDALONE LAB PAGE
+============================================================ */
+function generateLabHTML(cfg){
+  const m=cfg.meta;
+  const tw='<scr'+'ipt src="https://cdn.tailwindcss.com"></scr'+'ipt>';
+
+  const objective = `
+        <section class="mb-8">
+          <h2 class="text-lg font-semibold mb-2" style="color:#1d1d1f">${esc(cfg.objective.title)}</h2>
+          <p class="text-[15px] leading-relaxed" style="color:#3a3a3c">${cfg.objective.body}</p>
+        </section>`;
+
+  const anyHint = cfg.steps.some(s=>s.hint.enabled && (s.hint.code||"").trim()!=="");
+  const steps = cfg.steps.map((s,i)=>{
+    const has = s.hint.enabled && (s.hint.code||"").trim()!=="";
+    const hintPanel = has ? `
+            <div id="hint-${i+1}" class="hint">
+              <div class="hint-inner">
+                <p class="hint-label">Hint</p>
+                <pre class="bg-[#1e1e1e] text-[#e4e4e4] rounded-lg p-4 text-[13px] leading-relaxed overflow-x-auto font-mono"><code>${esc(s.hint.code)}</code></pre>
+              </div>
+            </div>` : "";
+    const badgeAttr = has ? ` data-hint-badge="${i+1}" title="Double-click for a hint"` : "";
+    return `
+        <div class="flex gap-4 mb-7">
+          <div class="step-badge flex-none w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold mt-0.5 select-none${has?' has-hint':''}" style="background:var(--accent)"${badgeAttr}>${i+1}</div>
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold text-[15px] mb-1" style="color:#1d1d1f">${esc(s.title)}</h3>
+            <div class="text-[15px] leading-relaxed" style="color:#3a3a3c">${s.description}</div>${hintPanel}
+          </div>
+        </div>`;
+  }).join("");
+  const hintTip = anyHint ? `<p class="text-[13px] mb-5" style="color:#86868b">Tip — double-click a step's number to reveal a hint.</p>` : "";
+
+  let extras="";
+  if(cfg.extras.enabled && cfg.extras.items.length){
+    const items=cfg.extras.items.map(x=>`
+          <li class="pl-4 py-1" style="border-left:3px solid var(--accent)">
+            <p class="font-semibold text-[15px] mb-0.5" style="color:#1d1d1f">${esc(x.title)}</p>
+            <p class="text-[14px] leading-relaxed" style="color:#3a3a3c">${x.body}</p>
+          </li>`).join("");
+    extras = `
+        <hr class="my-8 border-0 h-px" style="background:#e5e5ea">
+        <section>
+          <h2 class="text-lg font-semibold mb-4" style="color:#1d1d1f">Optional Extensions</h2>
+          <ul class="space-y-4">${items}</ul>
+        </section>`;
+  }
+
+  return `<!DOCTYPE html>
+<html lang="${esc(m.locale)}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(m.pageTitle)} — ${esc(m.pageSubtitle)}</title>
+${tw}
+<style>
+  :root{ --accent:${m.accentColor}; --accent-ring:${hexToRGBA(m.accentColor,.28)}; }
+  body{ font-family:-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif; -webkit-font-smoothing:antialiased; }
+  .scroll-pane::-webkit-scrollbar{ width:8px; }
+  .scroll-pane::-webkit-scrollbar-thumb{ background:#d2d2d7; border-radius:8px; }
+  .step-badge.has-hint{ cursor:pointer; box-shadow:0 0 0 3px var(--accent-ring); transition:filter .15s ease, box-shadow .2s ease; }
+  .step-badge.has-hint:hover{ filter:brightness(1.08); }
+  .hint{ display:grid; grid-template-rows:0fr; opacity:0; margin-top:0; transition:grid-template-rows .35s cubic-bezier(.4,0,.2,1), opacity .3s ease, margin-top .35s ease; }
+  .hint.open{ grid-template-rows:1fr; opacity:1; margin-top:.75rem; }
+  .hint-inner{ overflow:hidden; }
+  .hint-label{ font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--accent); margin-bottom:6px; }
+  @media (max-width:860px){ .lab-main{ flex-direction:column; } .lab-left{ width:100%!important; height:auto!important; } .lab-right{ height:60vh; } }
+</style>
+</head>
+<body class="h-screen overflow-hidden" style="background:#f5f5f7">
+  <div class="flex flex-col h-screen">
+
+    <header class="flex items-center gap-3 px-6 py-3.5 bg-white border-b" style="border-color:#e5e5ea">
+      <div class="flex-none w-9 h-9 rounded-xl flex items-center justify-center text-white" style="background:var(--accent)">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <h1 class="font-semibold text-[17px] leading-tight truncate" style="color:#1d1d1f">${esc(m.pageTitle)}</h1>
+        <p class="text-[13px] truncate" style="color:#6e6e73">${esc(m.pageSubtitle)}</p>
+      </div>
+      <div class="flex-none flex items-center gap-2 px-3 py-1.5 rounded-full" style="background:#ecfdf5">
+        <span class="w-2 h-2 rounded-full" style="background:#28c840;box-shadow:0 0 0 3px rgba(40,200,64,.18)"></span>
+        <span class="text-[12px] font-medium" style="color:#1a7f5a">online</span>
+      </div>
+    </header>
+
+    <main class="lab-main flex flex-1 overflow-hidden">
+      <section class="lab-left scroll-pane overflow-y-auto bg-white" style="width:46%;max-width:620px;border-right:1px solid #e5e5ea">
+        <div class="px-8 py-8">
+${objective}
+        <section>
+${hintTip}
+${steps}
+        </section>
+${extras}
+        </div>
+      </section>
+      <section class="lab-right flex-1 min-w-0" style="background:#fff">
+        <iframe src="https://onecompiler.com/embed/" width="100%" height="100%" frameborder="0" style="border:none;display:block" title="Code editor"></iframe>
+      </section>
+    </main>
+
+  </div>
+  <script>
+  document.querySelectorAll('[data-hint-badge]').forEach(function(b){
+    b.addEventListener('dblclick',function(){
+      var p=document.getElementById('hint-'+b.getAttribute('data-hint-badge'));
+      if(p){ p.classList.toggle('open'); }
+    });
+    b.addEventListener('mousedown',function(e){ if(e.detail>1){ e.preventDefault(); } });
+  });
+  <\/script>
+</body>
+</html>`;
+}
+
+/* ============================================================
+   LIVE PREVIEW (debounced)
+============================================================ */
+let previewTimer;
+function schedulePreview(){
+  clearTimeout(previewTimer);
+  previewTimer=setTimeout(updatePreview,150);
+}
+function updatePreview(){
+  const html=generateLabHTML(labConfig);
+  $("#previewFrame").srcdoc=html;
+  if(document.body.classList.contains("mode-preview")) $("#fullFrame").srcdoc=html;
+}
+
+/* ============================================================
+   MODES / EXPORT / EXAMPLE
+============================================================ */
+function setMode(mode){
+  document.querySelectorAll("#modeSeg button").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));
+  if(mode==="preview"){ $("#fullFrame").srcdoc=generateLabHTML(labConfig); document.body.classList.add("mode-preview"); }
+  else document.body.classList.remove("mode-preview");
+}
+function setTab(tab,btn){
+  document.querySelectorAll(".mobile-tabs .seg button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.body.classList.toggle("tab-preview",tab==="preview");
+  if(tab==="preview")updatePreview();
+}
+function openFullTab(){
+  const blob=new Blob([generateLabHTML(labConfig)],{type:"text/html"});
+  window.open(URL.createObjectURL(blob),"_blank");
+}
+function exportHTML(){
+  const html=generateLabHTML(labConfig);
+  const blob=new Blob([html],{type:"text/html;charset=utf-8"});
+  const a=document.createElement("a");
+  const slug=(labConfig.meta.pageTitle||"lab").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"lab";
+  a.href=URL.createObjectURL(blob); a.download=slug+".html";
+  document.body.appendChild(a); a.click(); a.remove();
+  toast("Exported "+slug+".html");
+}
+function loadExample(){
+  stepSeq=0; extraSeq=0;
+  labConfig={
+    meta:{ pageTitle:"Python Lab", pageSubtitle:"Working with Functions", accentColor:"#0D9488", locale:"en" },
+    objective:{ title:"Objective", body:"In this lab you'll learn to define and call <strong>functions</strong> in Python. Functions let you package logic so it can be reused. Complete each step and run your code in the editor on the right." },
+    steps:[
+      { id:++stepSeq, title:"Define a function", description:"Define a function called <code>greet</code> that takes one parameter <code>name</code> and prints <code>Hello, &lt;name&gt;!</code>.", hint:{enabled:true,code:'def greet(name):\n    print(f"Hello, {name}!")'} },
+      { id:++stepSeq, title:"Call the function", description:"Call <code>greet</code> with your own name as the argument.", hint:{enabled:true,code:'greet("Ada")'} },
+      { id:++stepSeq, title:"Return a value", description:"Write a function <code>square(n)</code> that <strong>returns</strong> <code>n * n</code>, then print <code>square(5)</code>.", hint:{enabled:false,code:""} }
+    ],
+    extras:{ enabled:true, items:[
+      { id:++extraSeq, title:"Default arguments", body:"Give <code>greet</code> a default value so calling it with no argument still works." },
+      { id:++extraSeq, title:"Multiple returns", body:"Write <code>min_max(numbers)</code> that returns both the smallest and largest values in a list." }
+    ]}
+  };
+  applyTheme(); buildSidebar(); updatePreview(); toast("Example loaded");
+}
+
+/* ============================================================
+   MARKDOWN IMPORT
+   Front-matter for meta, then "# Objective / # Steps / # Extensions"
+   sections. Each step / extension is a "## Heading". A fenced code
+   block (```) inside a step becomes that step's hint.
+============================================================ */
+function mdInline(s){
+  const codes=[];
+  s=s.replace(/`([^`]+)`/g,(m,c)=>{ codes.push(c); return "\u0000"+(codes.length-1)+"\u0000"; });
+  s=s.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");
+  s=s.replace(/__([^_]+)__/g,"<strong>$1</strong>");
+  s=s.replace(/\*([^*]+)\*/g,"<em>$1</em>");
+  s=s.replace(/\u0000(\d+)\u0000/g,(m,i)=>"<code>"+esc(codes[i])+"</code>");
+  return s;
+}
+function mdBlock(text){
+  return text.split(/\n{2,}/).map(p=>mdInline(p.replace(/\n/g," ").trim())).filter(Boolean).join("<br><br>");
+}
+function parseMarkdown(md){
+  md=(md||"").replace(/\r\n/g,"\n").replace(/\r/g,"\n");
+  const cfg={ meta:{pageTitle:"",pageSubtitle:"",accentColor:"#0D9488",locale:"en"},
+              objective:{title:"Objective",body:""}, steps:[], extras:{enabled:false,items:[]} };
+  let body=md;
+  const fm=md.match(/^---\n([\s\S]*?)\n---\n?/);
+  if(fm){
+    fm[1].split("\n").forEach(line=>{
+      const mm=line.match(/^([A-Za-z][\w]*)\s*:\s*(.*)$/);
+      if(!mm)return;
+      const k=mm[1].toLowerCase(), v=mm[2].trim();
+      if(k==="title")cfg.meta.pageTitle=v;
+      else if(k==="subtitle")cfg.meta.pageSubtitle=v;
+      else if(k==="accent"||k==="accentcolor"||k==="color"){ let c=v; if(c&&c[0]!=="#"&&/^[0-9a-fA-F]{6}$/.test(c))c="#"+c; if(/^#[0-9a-fA-F]{6}$/.test(c))cfg.meta.accentColor=c; }
+      else if(k==="locale"||k==="lang"||k==="language")cfg.meta.locale=v;
+    });
+    body=md.slice(fm[0].length);
+  }
+
+  stepSeq=0; extraSeq=0;
+  let section=null, curStep=null, curExtra=null, inFence=false, fenceBuf=[], textLines=[];
+  function commitText(){
+    const text=textLines.join("\n").trim(); textLines=[];
+    if(!text)return;
+    const html=mdBlock(text);
+    if(curStep)curStep.description=curStep.description?curStep.description+"<br><br>"+html:html;
+    else if(curExtra)curExtra.body=curExtra.body?curExtra.body+"<br><br>"+html:html;
+    else if(section==="objective")cfg.objective.body=cfg.objective.body?cfg.objective.body+"<br><br>"+html:html;
+  }
+  body.split("\n").forEach(line=>{
+    if(inFence){
+      if(/^```/.test(line.trim())){ inFence=false; if(curStep)curStep.hint={enabled:true,code:fenceBuf.join("\n").replace(/\s+$/,"")}; fenceBuf=[]; }
+      else fenceBuf.push(line);
+      return;
+    }
+    if(/^```/.test(line.trim())){ commitText(); inFence=true; fenceBuf=[]; return; }
+    const h2=line.match(/^##\s+(.*)$/);
+    const h1=line.match(/^#\s+(.*)$/);
+    if(h2 && (section==="steps"||section==="extensions")){
+      commitText();
+      if(section==="steps"){ curStep={id:++stepSeq,title:h2[1].trim(),description:"",hint:{enabled:false,code:""}}; cfg.steps.push(curStep); curExtra=null; }
+      else { curExtra={id:++extraSeq,title:h2[1].trim(),body:""}; cfg.extras.items.push(curExtra); curStep=null; }
+      return;
+    }
+    if(h1){
+      commitText(); curStep=null; curExtra=null;
+      const name=h1[1].trim().toLowerCase();
+      if(name.indexOf("objective")===0||name.indexOf("intro")===0){ section="objective"; cfg.objective.title=h1[1].trim(); }
+      else if(name.indexOf("step")===0||name.indexOf("instruction")===0){ section="steps"; }
+      else if(name.indexOf("extension")===0||name.indexOf("extra")===0||name.indexOf("bonus")===0||name.indexOf("optional")===0){ section="extensions"; cfg.extras.enabled=true; }
+      else section=null;
+      return;
+    }
+    textLines.push(line);
+  });
+  commitText();
+  if(inFence && curStep)curStep.hint={enabled:true,code:fenceBuf.join("\n").replace(/\s+$/,"")};
+
+  if(!cfg.meta.pageTitle)cfg.meta.pageTitle="Coding Lab";
+  if(cfg.extras.items.length===0)cfg.extras.enabled=false;
+  return cfg;
+}
+function importMarkdown(input){
+  const file=input.files&&input.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const cfg=parseMarkdown(e.target.result);
+      labConfig=cfg; applyTheme(); buildSidebar(); updatePreview();
+      toast("Imported "+file.name);
+    }catch(err){ console.error(err); toast("Couldn't parse that file"); }
+  };
+  reader.onerror=()=>toast("Couldn't read that file");
+  reader.readAsText(file);
+  input.value="";
+}
+const MD_TEMPLATE=[
+"---",
+"title: Python Lab",
+"subtitle: Working with Functions",
+"accent: #0D9488",
+"locale: en",
+"---",
+"",
+"# Objective",
+"",
+"In this lab you'll learn to define and call **functions** in Python.",
+"Functions let you package logic so it can be reused. Complete each",
+"step and run your code in the editor on the right.",
+"",
+"# Steps",
+"",
+"## Define a function",
+"",
+"Define a function called `greet` that takes one parameter `name`",
+"and prints `Hello, <name>!`.",
+"",
+"```",
+"def greet(name):",
+"    print(f\"Hello, {name}!\")",
+"```",
+"",
+"## Call the function",
+"",
+"Call `greet` with your own name as the argument.",
+"",
+"```",
+"greet(\"Ada\")",
+"```",
+"",
+"## Return a value",
+"",
+"Write a function `square(n)` that **returns** `n * n`,",
+"then print `square(5)`. (No hint on this one.)",
+"",
+"# Extensions",
+"",
+"## Default arguments",
+"",
+"Give `greet` a default value so calling it with no argument still works.",
+"",
+"## Multiple returns",
+"",
+"Write `min_max(numbers)` that returns both the smallest and largest values in a list.",
+""
+].join("\n");
+function downloadTemplate(){
+  const blob=new Blob([MD_TEMPLATE],{type:"text/markdown;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download="lab-template.md";
+  document.body.appendChild(a); a.click(); a.remove();
+  toast("Template downloaded");
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+applyTheme();
+buildSidebar();
+updatePreview();
+</script>
+</body>
+</html>
